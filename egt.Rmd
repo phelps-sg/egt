@@ -2,9 +2,13 @@
 title: "Co-evolution and Evolutionary Game Theory"
 author: "Steve Phelps"
 date: "26/03/2017"
-output:
-  revealjs::revealjs_presentation:
+output revealjs::revealjs_presentation:
     self_contained: false
+    reveal_plugins: ["chalkboard"]
+    reveal_options:
+      chalkboard:
+        theme: whiteboard
+        toggleNotesButton: true
 ---
 
 
@@ -39,6 +43,7 @@ Join <- function(x, y) {
 2. Competitive fitness functions 
 3. Co-evolutionary algorithms
 4. Introduction to evolutionary game-theory
+5. Game-theoretic co-evolutionary algorithms
 
 ## Fitness functions
 
@@ -132,6 +137,8 @@ Ficici & Pollack (1998)
 
 ![](figs/lizard.jpeg)
 
+Sinervo et al. (1996).
+
 ## Mating strategies
 
 - Orange: guard a large numbers of females, steal mates from blues, but vulnerable to yellow.
@@ -167,7 +174,7 @@ Ficici & Pollack (1998)
 - Hawk competes with Dove:
     - Hawk gains fitness $V$, dove gains $0$.
 - Dove competes with Dove:
-    - Animals share resource equally ($C/2$).
+    - Animals share resource equally ($V/2$).
 - Hawk competes with Hawk
     - Fight ensues, equal chance of winning $V$ or losing $-C$.
     
@@ -308,6 +315,8 @@ x_i  =  N_i / N \\
 ## Hawk-Dove in Continuous Time
 
 ```{r}
+require(deSolve)
+
 HD <- function (time, state, parms) {
   with(as.list(c(state, parms)), {
     return(list(x*(C*x**2 - C*x - V*x + V)/2))
@@ -329,11 +338,13 @@ sim2 <- IntegrateHD(t, state = c(x = 0.60), payoffs = c(V=4, C=3))
 plot(sim1[,1], sim1[,2], type='l', ylim=c(0, 1), xlab='t', ylab='x')
 ```
 
+
 ## Different initial conditions
 
 ```{r, echo=F}
 plot(sim2[,1], sim2[,2], type='l', ylim=c(0, 1), xlab='t', ylab='x')
 ```
+
 ## Different initial conditions
 
 ```{r, echo=F}
@@ -405,6 +416,8 @@ lines(x, av.payoff(x, list(V=3, C=6)), type='l', col='black')
 ## Evolutionarily Stable Strategies 
 
 ![](figs/ess.png)
+
+Reproduced from Tuyls (2004).
 
 ## ESS conditions
 
@@ -482,6 +495,8 @@ result <- plot(game.rps.analysed)
 
 ![](figs/lizard-rps.gif)
 
+Siverno et al (1996).
+
 ## Co-evolutionary pathologies
 
 - We can now see why we sometimes observe cycling or "mediocre stable states".
@@ -505,16 +520,20 @@ then these are *solutions*, not pathologies.
 
 ## Game-theoretic co-evolution
 
-Noble, J., & Watson, R. A. (2001). Pareto coevolution: Using performance against coevolved opponents in a game as dimensions for Pareto selection (pp. 493–50). 
+- Noble, J., & Watson, R. A. (2001). Pareto coevolution: Using performance against coevolved opponents in a game as dimensions for Pareto selection (pp. 493–50). 
 
-Ficici, S. G., & Pollack, J. B. (2003). A Game-Theoretic Memory Mechanism for Coevolution. 
+- Ficici, S. G., & Pollack, J. B. (2003). A Game-Theoretic Memory Mechanism for Coevolution. 
 
-Ficici, S. G., Melnik, O., & Pollack, J. B. (2005). A game-theoretic and dynamical-systems analysis of selection methods in coevolution. IEEE Transactions on Evolutionary Computation, 9(6), 580–602. http://doi.org/10.1109/TEVC.2005.856203
+- Ficici, S. G., Melnik, O., & Pollack, J. B. (2005). A game-theoretic and dynamical-systems analysis of selection methods in coevolution. IEEE Transactions on Evolutionary Computation, 9(6), 580–602. http://doi.org/10.1109/TEVC.2005.856203
  
-## Bibliography
+## Bibliography 
 
-Maynard-Smith, J. (1973). The Logic of Animal Conflict. Nature, 246, 15–18.
+- Ficici, S. G., & Pollack, J. B. (1998). Challenges in Coevolutionary Learning: Arms-Race Dynamics, Open-Endedness, and Mediocre Stable States. In Proceedings of the sixth international conference on Artificial life (pp. 238–247).
 
-Ficici, S. G., & Pollack, J. B. (1998). Challenges in Coevolutionary Learning: Arms-Race Dynamics, Open-Endedness, and Mediocre Stable States. In Proceedings of the sixth international conference on Artificial life (pp. 238–247).
+- Hillis, W. D. (1992). Co-evolving parasites improve simulated evolution as an optimization procedure. Physica D: Nonlinear Phenomena, 42(1–3), 228–234.
 
-Hillis, W. D. (1992). Co-evolving parasites improve simulated evolution as an optimization procedure. Physica D: Nonlinear Phenomena, 42(1–3), 228–234.
+- Maynard-Smith, J. (1973). The Logic of Animal Conflict. Nature, 246, 15–18.
+
+- Sinervo, Barry, and Curt M. Lively. The rock-paper-scissors game and the evolution of alternative male strategies. Nature 380.6571 (1996): 240.
+
+- Tuyls, K. (2004). Learning in Multi-Agent Systems: An Evolutionary Game Theoretic Approach.
