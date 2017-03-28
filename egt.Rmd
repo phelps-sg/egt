@@ -4,7 +4,7 @@ author: "Steve Phelps"
 date: "26/03/2017"
 output:
   revealjs::revealjs_presentation:
-    self_contained: true
+    self_contained: false
 ---
 
 
@@ -33,6 +33,13 @@ Join <- function(x, y) {
 
 ```
 
+## Overview
+
+1. Static fitness functions
+2. Competitive fitness functions 
+3. Co-evolutionary algorithms
+4. Introduction to evolutionary game-theory
+
 ## Fitness functions
 
 - Fitness is a function of a given phenotype, $i$, *together with its environment*, $\eta$.
@@ -60,8 +67,6 @@ $F(i | \eta)$
 $F(i | j, k, \ldots )$
 
 - Fitness functions of this form are sometimes called *competitive* fitness functions.
-
-- This results in *co-evolution*.
 
 ## Evolutionary Arms-Races
 
@@ -114,13 +119,14 @@ Hillis, W. D. (1992). Co-evolving parasites improve simulated evolution as an op
 - Cycling
 - Disengagement
 
-Ficici, S. G., & Pollack, J. B. (1998). Challenges in Coevolutionary Learning: Arms-Race Dynamics, Open-Endedness, and Mediocre Stable States. In Proceedings of the sixth international conference on Artificial life (pp. 238–247).
+Ficici & Pollack (1998)
 
 ## The logic of animal conflict
 
 ![](figs/hartebeest.jpg)
 
-- In many cases, one animal yields without a fight.
+- In many cases, one animal yields without a fight (Maynard-Smith, 1973).
+
 
 ## Common side-blotched lizards
 
@@ -145,8 +151,6 @@ Ficici, S. G., & Pollack, J. B. (1998). Challenges in Coevolutionary Learning: A
 - Animals compete over a resource with fitness value $V$.
 
 - If they fight, the losing animal loses fitness $C$, whereas the winner gains $V$.
-
-- The cost of losing a conflict is less than the value of the resource $V > C > 0$.
 
 ## Expected fitness
 
@@ -179,10 +183,28 @@ $$F(D|H) = 0$$
 
 ## As a payoff matrix
 
+- This defines a *game* between two "players" adopting one of two *strategies*.
+
 |          | $H$        | $D$    |
 | -------- | ---------- | -------|
 | $H$      | $(V-C)/2$  | $V$    |
 | $D$      | $0$        | $V/2$  |
+
+## Examples
+
+### $V=30, C=40$
+
+|          | $H$        | $D$    |
+| -------- | ---------- | -------|
+| $H$      | $-5$       | $30$   |
+| $D$      | $0$        | $15$   |
+
+### $V=40, C=30$
+
+|          | $H$        | $D$    |
+| -------- | ---------- | -------|
+| $H$      | $5$        | $40$   |
+| $D$      | $0$        | $20$   |
 
 ## Frequency-dependent fitness
 
@@ -192,9 +214,19 @@ $$F(D|H) = 0$$
 
 - Let $x$ denote the current proportion (*frequency*) of hawks in the population.
 
+- The fitness of any given pair of strategies depend on their frequency.
+
+- That is, fitness is a function of frequency.
+
+## Fitness functions
+
+Hawk:
+
 \begin{align}
 F(H|x) & = & x \times F(H|H) + (1-x) \times F(H|D) \\& = & x(V - C)/2 + (1-x)V
 \end{align}
+
+Dove:
 
 \begin{align}
 F(D|x) & = & x \times F(D|H) + (1-x) \times F(D|D) \\& = & (1-x)V/2
@@ -206,57 +238,159 @@ F(D|x) & = & x \times F(D|H) + (1-x) \times F(D|D) \\& = & (1-x)V/2
 
 $$F(x) = x \times F(H|x) + (1-x) \times F(D|x)$$
 
-- After reproduction, each type increases proportionate to its relative fitness:
+- After reproduction, each type increases proportionate to its relative fitness.
+
+- For hawks:
 
 \begin{align}
 x' & = & x \frac{F(H|x)}{F(x)} \\
 & = & \frac{x}{C x^2 - V} (C x + V x - 2 V)
 \end{align}
 
-## Numerical example
+## Numerical example 
 
 ```{r}
-V = 4
-C = 3
-
-x = 0.01
-
-replicate <- function(x) {
-  x*(C*x + V*x - 2*V)/(C*x**2 - V)
+replicate <- function(x, V, C) {
+ x*(C*x + V*x - 2*V)/(C*x**2 - V)
 }
 
-result = c()
-period = 0:13
-for(t in period) {
-  result = c(result, x)
-  x = replicate(x)
+simulate <- function(x0, period, V, C) {
+  result = c()
+  x <- x0
+  for(t in period) {
+    result = c(result, x)
+    x = replicate(x, V, C)
+  } 
+  result
 }
+
+t <- 0:13
+result <- simulate(0.01, t, V=4, C=3)
 ```
 
 ## Numerical example - data 
 
 ```{r, echo=F, results='asis'}
-dataset = data.frame(t = period, x = result)
+dataset = data.frame(x = result)
 print(xtable(dataset), type='html')
 ```
 
 ## Numerical example - plot
 
 ```{r, echo=F}
-plot(period, result, type='l')  
+plot(t, result, type='l', ylab='x', xlab='t')  
 ```
    
+  
 ## Using matrix algebra
 
 $$\mathbf{A} = \begin{bmatrix}(V-C)/2 & V\\ 0 & V/2 \end{bmatrix}$$
-
-With constant payoffs, we can use a quadratic fitness function:
 
 $$F(i, \mathbf{x}) = (\mathbf{A}\mathbf{x})_i$$
 
 $$F(\mathbf{x}) = \mathbf{x}^T \mathbf{A} \mathbf{x}$$
 
 $$x_i' = x_i \frac{F(i, \mathbf{x})}{F(\mathbf{x})}$$
+
+## Continuous time
+
+- Let $N_i$ be the *number* of individuals in the population playing strategy $i$.
+
+- Then the rate of change of the population is given by:
+
+\begin{align}
+\frac{dN_i}{dt}  =  F(i, \mathbf{x}) \times N_i \\
+\frac{dN}{dt}  =  F(\mathbf{x}) \times N \\
+x_i  =  N_i / N \\
+\frac{dx_i}{dt}  =  x_i ( F(i, \mathbf{x}) - F(\mathbf(x)) ) \\
+\end{align}
+
+## Hawk-Dove in Continuous Time
+
+```{r}
+HD <- function (time, state, parms) {
+  with(as.list(c(state, parms)), {
+    return(list(x*(C*x**2 - C*x - V*x + V)/2))
+  })
+}
+
+IntegrateHD  <- function(t, state =  c(x = 0.01), payoffs = c(V=4, C=3)) {
+  ode(func = HD, y = state, parms = payoffs, times = t)
+}  
+
+t <- seq(0, 10, by=0.01)
+sim1 <- IntegrateHD(t, state = c(x = 0.01), payoffs = c(V=4, C=3))
+sim2 <- IntegrateHD(t, state = c(x = 0.60), payoffs = c(V=4, C=3))
+```
+
+## Hawk-Dove in Continuous Time
+
+```{r, echo=F}
+plot(sim1[,1], sim1[,2], type='l', ylim=c(0, 1), xlab='t', ylab='x')
+```
+
+## Different initial conditions
+
+```{r, echo=F}
+plot(sim2[,1], sim2[,2], type='l', ylim=c(0, 1), xlab='t', ylab='x')
+```
+## Different initial conditions
+
+```{r, echo=F}
+plot(sim2[,1], sim2[,2], type='l', ylim=c(0, 1), xlab='t', ylab='x')
+lines(sim1[,1], sim1[,2])
+```
+
+## Fitness 
+
+```{r}
+hawk.payoff <- function(x, parms) {
+  with(parms,  
+    x * (V - C)/2 + (1-x)*V)
+}
+
+dove.payoff <- function(x, parms) {
+   with(parms,  
+     (1 - x)*V/2)
+}
+
+av.payoff <- function(x, parms) {
+  x * hawk.payoff(x, parms) + (1-x) * dove.payoff(x, parms)
+} 
+```
+
+## Fitness
+
+```{r, echo=F}
+x <- seq(0, 1, by=0.01)
+plot(x, hawk.payoff(x, list(V=4, C=3)), type='l', col='red', ylab='fitness', ylim=c(0, 4))
+lines(x, dove.payoff(x, list(V=4, C=3)), type='l', col='blue')
+lines(x, av.payoff(x, list(V=4, C=3)), type='l', col='black')
+```
+
+## $V < C$
+
+```{r}
+t <- seq(0, 15, by=0.01)
+sim1 <- IntegrateHD(t, state = c(x = 0.01), payoffs = c(V=3, C=6))
+sim2 <- IntegrateHD(t, state = c(x = 0.99), payoffs = c(V=3, C=6))
+```
+
+## $V < C$
+
+```{r, echo=F}
+plot(sim1[,1], sim1[,2], type='l', ylim=c(0,1), xlab='t', ylab='x')
+lines(sim2[,1], sim2[,2])
+```
+
+## Fitness
+
+```{r, echo=F}
+x <- seq(0, 1, by=0.01)
+plot(x, hawk.payoff(x, list(V=3, C=6)), type='l', col='red', ylab='fitness')
+lines(x, dove.payoff(x, list(V=3, C=6)), type='l', col='blue')
+lines(x, av.payoff(x, list(V=3, C=6)), type='l', col='black')
+```
 
 ## Payoff to a mixed strategy
 
@@ -278,7 +412,7 @@ $$x_i' = x_i \frac{F(i, \mathbf{x})}{F(\mathbf{x})}$$
 
 - Condition:
 
-$$F(\mathbf{x}, (1 - \epsilon) \mathbf{x} + \epsilon \mathbf{y})  > u(\mathbf{y}, \epsilon \mathbf{y} + (1 - \epsilon) \mathbf{y}) \\ \forall \mathbf{y} \neq \mathbf{x}$$
+$$F(\mathbf{x}, (1 - \epsilon) \mathbf{x} + \epsilon \mathbf{y})  > F(\mathbf{y}, \epsilon \mathbf{y} + (1 - \epsilon) \mathbf{y}) \\ \forall \mathbf{y} \neq \mathbf{x}$$
 
 Implies:
 
@@ -287,20 +421,6 @@ $$F(\mathbf{x}, \mathbf{x}) > F(\mathbf{y}, \mathbf{x}) \; \forall \mathbf{y}$$
 or
 
 $$F(\mathbf{x}, \mathbf{x}) = F(\mathbf{y}, \mathbf{x}) \wedge F(\mathbf{x}, \mathbf{y}) > F(\mathbf{y}, \mathbf{y}) \; \forall \mathbf{y} \neq \mathbf{x}  $$
-
-
-## Continuous time
-
-- Let $N_i$ be the *number* of individuals in the population playing strategy $i$.
-
-- Then the rate of change of the population is given by:
-
-$$\frac{dN_i}{dt} = f_i N_i$$
-$$x_i = N_i / N$$
-
-$$\frac{dN}{dt} = F(\mathbf{x}) \times N$$
-
-$$\frac{dx_i}{dt} = x_i ( F(i, \mathbf{x}) - F(\mathbf(x)) )$$
 
 ## Three strategies
 
@@ -383,13 +503,18 @@ then these are *solutions*, not pathologies.
 
 - If there are multiple equilibria, it may not make sense to look for "robust" strategies.
 
-# Game-theoretic co-evolution
+## Game-theoretic co-evolution
 
-Outside of the scope of the current lecture, but for more reading:
-
-- Noble, J., & Watson, R. A. (2001). Pareto coevolution: Using performance against coevolved opponents in a game as dimensions for Pareto selection (pp. 493–50). 
+Noble, J., & Watson, R. A. (2001). Pareto coevolution: Using performance against coevolved opponents in a game as dimensions for Pareto selection (pp. 493–50). 
 
 Ficici, S. G., & Pollack, J. B. (2003). A Game-Theoretic Memory Mechanism for Coevolution. 
 
 Ficici, S. G., Melnik, O., & Pollack, J. B. (2005). A game-theoretic and dynamical-systems analysis of selection methods in coevolution. IEEE Transactions on Evolutionary Computation, 9(6), 580–602. http://doi.org/10.1109/TEVC.2005.856203
  
+## Bibliography
+
+Maynard-Smith, J. (1973). The Logic of Animal Conflict. Nature, 246, 15–18.
+
+Ficici, S. G., & Pollack, J. B. (1998). Challenges in Coevolutionary Learning: Arms-Race Dynamics, Open-Endedness, and Mediocre Stable States. In Proceedings of the sixth international conference on Artificial life (pp. 238–247).
+
+Hillis, W. D. (1992). Co-evolving parasites improve simulated evolution as an optimization procedure. Physica D: Nonlinear Phenomena, 42(1–3), 228–234.
